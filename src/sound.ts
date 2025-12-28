@@ -8,7 +8,7 @@ import type { EventType } from "./config"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function getBundledSoundPath(event: EventType): string {
-  return join(__dirname, "sounds", `${event}.wav`)
+  return join(__dirname, "..", "sounds", `${event}.wav`)
 }
 
 function getSoundFilePath(event: EventType, customPath: string | null): string | null {
@@ -25,18 +25,22 @@ function getSoundFilePath(event: EventType, customPath: string | null): string |
 }
 
 async function runCommand(command: string, args: string[]): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const proc = spawn(command, args, {
       stdio: "ignore",
       detached: false,
     })
 
-    proc.on("error", () => {
-      resolve()
+    proc.on("error", (err) => {
+      reject(err)
     })
 
-    proc.on("close", () => {
-      resolve()
+    proc.on("close", (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`Command exited with code ${code}`))
+      }
     })
   })
 }
@@ -64,9 +68,8 @@ async function playOnMac(soundPath: string): Promise<void> {
 }
 
 async function playOnWindows(soundPath: string): Promise<void> {
-  const escapedPath = soundPath.replace(/'/g, "''")
-  const psCommand = `(New-Object Media.SoundPlayer '${escapedPath}').PlaySync()`
-  await runCommand("powershell", ["-c", psCommand])
+  const script = `(New-Object Media.SoundPlayer $args[0]).PlaySync()`
+  await runCommand("powershell", ["-c", script, soundPath])
 }
 
 export async function playSound(

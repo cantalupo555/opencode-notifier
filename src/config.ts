@@ -103,7 +103,10 @@ export function loadConfig(): NotifierConfig {
     return {
       sound: globalSound,
       notification: globalNotification,
-      timeout: userConfig.timeout ?? DEFAULT_CONFIG.timeout,
+      timeout:
+        typeof userConfig.timeout === "number" && userConfig.timeout > 0
+          ? userConfig.timeout
+          : DEFAULT_CONFIG.timeout,
       events: {
         permission: parseEventConfig(userConfig.events?.permission, defaultWithGlobal),
         complete: parseEventConfig(userConfig.events?.complete, defaultWithGlobal),
