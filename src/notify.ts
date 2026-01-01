@@ -2,6 +2,7 @@ import os from "os"
 import notifier from "node-notifier"
 
 const NOTIFICATION_TITLE = "OpenCode"
+const DEBOUNCE_MS = 1000
 
 const platform = os.type()
 
@@ -20,10 +21,18 @@ if (platform === "Linux" || platform.match(/BSD$/)) {
   platformNotifier = notifier
 }
 
+const lastNotificationTime: Record<string, number> = {}
+
 export async function sendNotification(
   message: string,
   timeout: number
 ): Promise<void> {
+  const now = Date.now()
+  if (lastNotificationTime[message] && now - lastNotificationTime[message] < DEBOUNCE_MS) {
+    return
+  }
+  lastNotificationTime[message] = now
+
   return new Promise((resolve) => {
     const notificationOptions: any = {
       title: NOTIFICATION_TITLE,
